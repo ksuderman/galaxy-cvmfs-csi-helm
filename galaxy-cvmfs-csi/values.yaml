@@ -185,3 +185,5 @@ csiProvisioner:
   args:
     - "--csi-address=$(ADDRESS)"
     - "--v=5"
+# A provisioner name needed for the SCs
+provisioner: cvmfs.csi.cern.ch
