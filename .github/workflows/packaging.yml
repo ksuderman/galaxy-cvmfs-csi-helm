@@ -7,7 +7,7 @@ jobs:
     name: Package and push
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
            persist-credentials: false
       - uses: cloudve/helm-ci@master
@@ -18,3 +18,23 @@ jobs:
           charts-token: ${{ secrets.CHARTS_TOKEN }}
           github-labels: ${{ join(github.event.pull_request.labels.*.name, ', ') }}
           git-branch: ${{ github.event.pull_request.base.ref }}
+  tag-and-release:
+    needs: [ package ]
+    name: Create a tag and GitHub release for this version.
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    if: |
+      always() 
+      && contains(needs.*.result, 'success')
+      && !contains(needs.*.result, 'failure')
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag and release
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          version=v$(cat galaxy-cvmfs-csi/Chart.yaml | grep ^version: | awk '{print $2}')
+          git tag -a $version -m "Automatic release of $version"
+          git push origin $version
+          gh release create $version --generate-notes --latest
